@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import dk.mwittrock.cpilint.suppliers.DirectoryRawIflowArtifactSupplier;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -68,6 +69,8 @@ public final class CliClient {
 	private static final String CLI_OPTION_HOST = "host";
 	private static final String CLI_OPTION_FILES = "files";
 	private static final String CLI_OPTION_DIRECTORY = "directory";
+
+	private static final String CLI_OPTION_DIRECTORY_RAW = "directoryraw";
 	private static final String CLI_OPTION_RULES = "rules";
 	private static final String CLI_OPTION_BORING = "boring";
 	private static final String CLI_OPTION_DEBUG = "debug";
@@ -79,6 +82,7 @@ public final class CliClient {
 		HELP_MODE,
 		FILE_SUPPLIER_MODE,
 		DIRECTORY_SUPPLIER_MODE,
+		DIRECTORY_RAW_SUPPLIER_MODE,
 		TENANT_SUPPLIER_SINGLE_MODE,
 		TENANT_SUPPLIER_MULTI_MODE,
 		TENANT_SUPPLIER_PACKAGES_MODE
@@ -182,6 +186,8 @@ public final class CliClient {
 			mode = RunMode.FILE_SUPPLIER_MODE;
 		} else if (directorySupplierMode(cl)) {
 			mode = RunMode.DIRECTORY_SUPPLIER_MODE;
+		} else if (directoryRawSupplierMode(cl)) {
+			mode = RunMode.DIRECTORY_RAW_SUPPLIER_MODE;
 		} else if (tenantSupplierSingleMode(cl)) {
 			mode = RunMode.TENANT_SUPPLIER_SINGLE_MODE;
 		} else if (tenantSupplierMultiMode(cl)) {
@@ -267,6 +273,8 @@ public final class CliClient {
 			supplier = directorySupplierFromCommandLine(cl);
 		} else if (mode == RunMode.FILE_SUPPLIER_MODE) {
 			supplier = fileSupplierFromCommandLine(cl);
+		} else if (mode == RunMode.DIRECTORY_RAW_SUPPLIER_MODE) {
+			supplier = directoryRawSupplierFromCommandLine(cl);
 		} else if (mode == RunMode.TENANT_SUPPLIER_SINGLE_MODE) {
 			supplier = tenantSupplierSingleFromCommandLine(cl);
 		} else if (mode == RunMode.TENANT_SUPPLIER_MULTI_MODE) {
@@ -295,6 +303,19 @@ public final class CliClient {
 			exitWithErrorMessage("Provided directory is not a directory.");
 		}
 		return new DirectoryIflowArtifactSupplier(directoryPath);
+	}
+
+	private static IflowArtifactSupplier directoryRawSupplierFromCommandLine(CommandLine cl) {
+		Path directoryPath = Paths.get(cl.getOptionValue(CLI_OPTION_DIRECTORY_RAW));
+		if (Files.notExists(directoryPath)) {
+			logger.error("Provided directory does not exist: '{}'", directoryPath);
+			exitWithErrorMessage("Provided directory does not exist.");
+		}
+		if (!Files.isDirectory(directoryPath)) {
+			logger.error("Provided directory is not a directory: '{}'", directoryPath);
+			exitWithErrorMessage("Provided directory is not a directory.");
+		}
+		return new DirectoryRawIflowArtifactSupplier(directoryPath);
 	}
 	
 	private static IflowArtifactSupplier fileSupplierFromCommandLine(CommandLine cl) {
@@ -500,6 +521,13 @@ public final class CliClient {
             .argName("dir")
             .desc("Process all iflow artifact files in this directory")
             .build());
+		options.addOption(Option.builder()
+				.longOpt(CLI_OPTION_DIRECTORY_RAW)
+				.required(false)
+				.hasArg()
+				.argName("dir")
+				.desc("Process all iflow artifact files in this directory")
+				.build());
         // Add the Tenant Management Node host option.
         options.addOption(Option.builder()
         	.longOpt(CLI_OPTION_HOST)
@@ -654,6 +682,25 @@ public final class CliClient {
     	Collection<String> optional = List.of(CLI_OPTION_BORING, CLI_OPTION_DEBUG);
     	return checkOptions(cl, mandatory, optional) && cl.getOptionValues(CLI_OPTION_DIRECTORY).length == 1;
     }
+
+	private static boolean directoryRawSupplierMode(CommandLine cl) {
+		/*
+		 * The following options are mandatory in this mode:
+		 *
+		 * + rules
+		 * + directory
+		 *
+		 * The following options are optional in this mode:
+		 *
+		 * + boring
+		 * + debug
+		 *
+		 * The -directory option must have exactly one argument.
+		 */
+		Collection<String> mandatory = List.of(CLI_OPTION_RULES, CLI_OPTION_DIRECTORY_RAW);
+		Collection<String> optional = List.of(CLI_OPTION_BORING, CLI_OPTION_DEBUG);
+		return checkOptions(cl, mandatory, optional) && cl.getOptionValues(CLI_OPTION_DIRECTORY_RAW).length == 1;
+	}
     
     private static boolean tenantSupplierSingleMode(CommandLine cl) {
     	/*

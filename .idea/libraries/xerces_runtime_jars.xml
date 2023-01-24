@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="xerces-runtime-jars">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist-files/xerces-runtime-jars/xercesImpl.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist-files/xerces-runtime-jars/cupv10k-runtime.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist-files/xerces-runtime-jars/org.eclipse.wst.xml.xpath2.processor_1.2.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
